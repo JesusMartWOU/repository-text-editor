@@ -1,5 +1,7 @@
 package view;
 
+import controller.ControladorGUI;
+
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -10,16 +12,15 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.util.ArrayList;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
-import javax.swing.text.SimpleAttributeSet;
-import javax.swing.text.StyleConstants;
-import javax.swing.text.StyledDocument;
-import javax.swing.text.StyledEditorKit;
+import javax.swing.text.*;
 
 public class VentanaGUI extends JFrame {
     public JTextPane areaTexto;
@@ -35,7 +36,7 @@ public class VentanaGUI extends JFrame {
             btnSubindice, btnSuperindice, btnTipografia, btnResaltarTexto, 
             btnColorFuente, btnViñeta, btnNumeracion, btnDisminuirSangria,
             btnAumentarSangria, btnInterlineado, btnAlinearIzq, btnAlinearCen, 
-            btnAlinearDer, btnJustificar, btnZoomMas, btnZoomMenos;
+            btnAlinearDer, btnJustificar, btnZoomMas, btnZoomMenos, btnAñadirPagina;
     public JComboBox<String> comboTipoFuente;
     public JComboBox<Integer> comboTamañoFuente;   
     private CardLayout cardLayout;
@@ -50,8 +51,10 @@ public class VentanaGUI extends JFrame {
     public JPopupMenu menuColores, menuInterlineado, menuHoja;
     public SimpleAttributeSet attributes;
     public StyledDocument doc;
-    private JPanel contenedorHojas;
+    public JPanel contenedorHojas;
     public float zoomFactor = 1.0f;
+    public boolean autoCrearPaginas = true;
+    public ControladorGUI controlador;
     
     private String[] fuentes = { "Arial", "Calibri", "Times New Roman", "Algerian" ,"Consolas", "Papyrus", 
         "Georgia", "Impact", "Tahoma", "Segoe UI", "SansSerif", "Edwardian Script ITC" };
@@ -86,6 +89,10 @@ public class VentanaGUI extends JFrame {
         panelCartas = crearPanelCartas();
         panelAreaHoja = crearAreaTexto();
         panelFooter = crearFooter();
+
+        //Personalizamos panelAreaHoja:
+        panelAreaHoja.setLayout(new BoxLayout(panelAreaHoja, BoxLayout.Y_AXIS));
+        panelAreaHoja.setBackground(new Color(200, 200, 200));
         
         //Construimos la interfaz (header)
         panelHeader = new JPanel(new BorderLayout());             
@@ -159,8 +166,12 @@ public class VentanaGUI extends JFrame {
         btnZoomMas = crearBoton("Zoom +");
         btnZoomMenos = crearBoton("Zoom -");
 
+        // Boton Añadir Pagina
+        btnAñadirPagina = new JButton("Nueva Pagina");
+
         panel.add(btnZoomMas);
         panel.add(btnZoomMenos);
+        panel.add(btnAñadirPagina);
         
         // ComboBox Fuentes
         comboTipoFuente = new JComboBox(fuentes); // Se crea el componente 
@@ -428,7 +439,7 @@ public class VentanaGUI extends JFrame {
     }
      */
 
-    private JPanel crearHoja() {
+    public JPanel crearHoja() {
         JPanel hoja = new JPanel(new BorderLayout());
         hoja.setBackground(Color.WHITE);
         hoja.setPreferredSize(new Dimension(
@@ -446,6 +457,19 @@ public class VentanaGUI extends JFrame {
             areaTexto = area;
         }
 
+        if (controlador != null) {
+            controlador.agregarListenersANuevaArea(area);
+        }
+
+        area.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (controlador != null) {
+                    controlador.setAreaActiva(area);
+                }
+            }
+        });
+
         hoja.add(area, BorderLayout.CENTER);
 
         // Listener inteligente
@@ -457,7 +481,7 @@ public class VentanaGUI extends JFrame {
             private void verificar(JTextPane area) {
                 int altura = area.getPreferredSize().height;
 
-                if (altura > 900) { // límite realista
+                if (autoCrearPaginas && altura > 900) { // límite realista
                     // Evita crear infinitas hojas
                     if (contenedorHojas.getComponentCount() < 10) {
                         contenedorHojas.add(Box.createVerticalStrut(20));
@@ -624,8 +648,12 @@ public class VentanaGUI extends JFrame {
             javax.swing.text.Element element = doc.getCharacterElement(i);
             SimpleAttributeSet attr = new SimpleAttributeSet(element.getAttributes());
 
-            int size = StyleConstants.getFontSize(attr);
-            StyleConstants.setFontSize(attr, Math.max(1, (int)(size * factor)));
+            int baseSize = StyleConstants.getFontSize(attr);
+
+            // Evitar que se acumule infinito
+            int newSize = Math.max(1, Math.round(baseSize * factor));
+
+            StyleConstants.setFontSize(attr, newSize);
 
             doc.setCharacterAttributes(i, 1, attr, true);
         }
