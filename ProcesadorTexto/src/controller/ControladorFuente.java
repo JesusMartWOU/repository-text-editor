@@ -1,33 +1,15 @@
 package controller;
 
 import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Image;
 import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.Shape;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.io.File;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JColorChooser;
-import javax.swing.JFileChooser;
-import javax.swing.JLabel;
-import javax.swing.JLayeredPane;
+import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.DefaultHighlighter;
-import javax.swing.text.Highlighter;
-import javax.swing.text.JTextComponent;
-import javax.swing.text.Position;
-import javax.swing.text.SimpleAttributeSet;
-import javax.swing.text.StyleConstants;
-import javax.swing.text.View;
+import javax.swing.text.*;
+
 import model.ModeloFuente;
 import view.VentanaGUI;
 
@@ -39,7 +21,7 @@ public class ControladorFuente {
     private int inicio, fin;    
     private boolean modoResaltado;
     private Color btnOn = new Color(197, 197, 197), 
-            btnOff = new Color(245, 245, 245);                
+            btnOff = new Color(245, 245, 245);
     
     public ControladorFuente(VentanaGUI view, ControladorGUI controladorGUI){
         this.view = view;
@@ -52,18 +34,19 @@ public class ControladorFuente {
     private void initController(){
         
         // Evento cambiar tipo fuente
-        view.comboTipoFuente.addActionListener(e -> {       
-            //------Lo cambiamos por el metodo getCursorTextPosition()-------
-            //int inicio = view.areaTexto.getSelectionStart();
-            //int fin = view.areaTexto.getSelectionEnd();       
+        view.comboTipoFuente.addActionListener(e -> {
             controladorGUI.cerrarBloque();
             obtenerTextoSeleccionado();
-            
-            String seleccionado = (String) view.comboTipoFuente.getSelectedItem();            
-            view.doc = view.areaTexto.getStyledDocument();
-                        
-            modeloFuente.aplicarFamiliaFuente(view.doc, view.attributes, inicio, fin, seleccionado);
-            
+
+            JTextPane area = controladorGUI.getAreaActiva();
+            if (area == null) return;
+
+            StyledDocument doc = area.getStyledDocument();
+
+            String seleccionado = (String) view.comboTipoFuente.getSelectedItem();
+
+            modeloFuente.aplicarFamiliaFuente(doc, view.attributes, inicio, fin, seleccionado);
+
             cursorSinTextoSeleccionado(seleccionado);
         });
         
@@ -71,12 +54,17 @@ public class ControladorFuente {
         view.comboTamañoFuente.addActionListener(e -> {
             controladorGUI.cerrarBloque();
             obtenerTextoSeleccionado();
-            
-            int tamaño = (int) view.comboTamañoFuente.getSelectedItem();            
-            view.doc = view.areaTexto.getStyledDocument();
-            
-            modeloFuente.aplicarTamañoFuente(view.doc, view.attributes, inicio, fin, tamaño);
-            cursorSinTextoSeleccionado(tamaño);            
+
+            JTextPane area = controladorGUI.getAreaActiva();
+            if (area == null) return;
+
+            StyledDocument doc = area.getStyledDocument();
+
+            int tamaño = (int) view.comboTamañoFuente.getSelectedItem();
+
+            modeloFuente.aplicarTamañoFuente(doc, view.attributes, inicio, fin, tamaño);
+
+            cursorSinTextoSeleccionado(tamaño);
         });
         
         // Evento boton aumentar tamaño
@@ -84,19 +72,25 @@ public class ControladorFuente {
             try {
                 controladorGUI.cerrarBloque();
                 obtenerTextoSeleccionado();
-                
-                int tamaño = (int) view.comboTamañoFuente.getItemAt(view.comboTamañoFuente.getSelectedIndex() + 1);                        
-                //System.out.println("Tamaño fuente: " + tamaño);
-                view.doc = view.areaTexto.getStyledDocument();
-                
-                modeloFuente.aplicarTamañoFuente(view.doc, view.attributes, inicio, fin, tamaño);
+
+                JTextPane area = controladorGUI.getAreaActiva();
+                if (area == null) return;
+
+                StyledDocument doc = area.getStyledDocument();
+
+                int tamaño = (int) view.comboTamañoFuente
+                        .getItemAt(view.comboTamañoFuente.getSelectedIndex() + 1);
+
+                modeloFuente.aplicarTamañoFuente(doc, view.attributes, inicio, fin, tamaño);
+
                 cursorSinTextoSeleccionado(tamaño);
-            
-                view.comboTamañoFuente.setSelectedIndex(view.comboTamañoFuente.getSelectedIndex() + 1);
+
+                view.comboTamañoFuente.setSelectedIndex(
+                        view.comboTamañoFuente.getSelectedIndex() + 1);
+
             } catch (Exception ex) {
                 System.err.println("Limite de tamaño de texto");
-                view.areaTexto.requestFocusInWindow();
-            }            
+            }
         });
         
         // Evento boton reducir tamaño
@@ -104,24 +98,35 @@ public class ControladorFuente {
             try {
                 controladorGUI.cerrarBloque();
                 obtenerTextoSeleccionado();
-                
-                int tamaño = (int) view.comboTamañoFuente.getItemAt(view.comboTamañoFuente.getSelectedIndex() - 1);                        
-                view.doc = view.areaTexto.getStyledDocument();
-                
-                modeloFuente.aplicarTamañoFuente(view.doc, view.attributes, inicio, fin, tamaño);
+
+                JTextPane area = controladorGUI.getAreaActiva();
+                if (area == null) return;
+
+                StyledDocument doc = area.getStyledDocument();
+
+                int tamaño = (int) view.comboTamañoFuente
+                        .getItemAt(view.comboTamañoFuente.getSelectedIndex() - 1);
+
+                modeloFuente.aplicarTamañoFuente(doc, view.attributes, inicio, fin, tamaño);
+
                 cursorSinTextoSeleccionado(tamaño);
-            
-                view.comboTamañoFuente.setSelectedIndex(view.comboTamañoFuente.getSelectedIndex() - 1);
+
+                view.comboTamañoFuente.setSelectedIndex(
+                        view.comboTamañoFuente.getSelectedIndex() - 1);
+
             } catch (Exception ex) {
                 System.err.println("Limite de tamaño de texto");
-                view.areaTexto.requestFocusInWindow();
-            }            
+            }
         });
         
         // Evento boton MayusculasMinusculas
         view.btnCambiarMayusMinusc.addActionListener(e -> {
             modeloFuente.ToggleUpperCase();
-            view.areaTexto.setText(modeloFuente.textoAMayusMinus(view.areaTexto.getText()));
+
+            JTextPane area = controladorGUI.getAreaActiva();
+            if (area == null) return;
+
+            area.setText(modeloFuente.textoAMayusMinus(area.getText()));
                         
             view.areaTexto.requestFocusInWindow();            
         });
@@ -139,109 +144,127 @@ public class ControladorFuente {
         
         // Evento boton Negritas
         view.btnNegritas.addActionListener(e -> {
-            // Activar/Desactivar la funcion
             boolean activo = modeloFuente.ToggleBold();
-            
-            // Cerramos bloque para guardarlo en el historial undo/redo
+
             controladorGUI.cerrarBloque();
-            
             obtenerTextoSeleccionado();
-            view.doc = view.areaTexto.getStyledDocument();
-            
-            modeloFuente.aplicarNegritas(view.doc, view.attributes, inicio, fin);
+
+            JTextPane area = controladorGUI.getAreaActiva();
+            if (area == null) return;
+
+            StyledDocument doc = area.getStyledDocument();
+
+            modeloFuente.aplicarNegritas(doc, view.attributes, inicio, fin);
+
             cursorSinTextoSelecionado();
-            
-            view.btnNegritas.setBackground(colorBotonClicked(activo));                 
+
+            view.btnNegritas.setBackground(colorBotonClicked(activo));
         });
         
         // Evento para Cursiva
         view.btnCursiva.addActionListener(e -> {
             boolean activo = modeloFuente.ToggleItalic();
-            
+
             controladorGUI.cerrarBloque();
-            
             obtenerTextoSeleccionado();
-            view.doc = view.areaTexto.getStyledDocument();
-            
-            modeloFuente.aplicarCursiva(view.doc, view.attributes, inicio, fin);
+
+            JTextPane area = controladorGUI.getAreaActiva();
+            if (area == null) return;
+
+            StyledDocument doc = area.getStyledDocument();
+
+            modeloFuente.aplicarCursiva(doc, view.attributes, inicio, fin);
+
             cursorSinTextoSelecionado();
-            
-            view.btnCursiva.setBackground(colorBotonClicked(activo));                        
+
+            view.btnCursiva.setBackground(colorBotonClicked(activo));
         });
         
         // Evento boton Subrayar
         view.btnSubrayar.addActionListener(e -> {
             boolean activo = modeloFuente.ToggleUnderline();
-            
+
             controladorGUI.cerrarBloque();
-            
             obtenerTextoSeleccionado();
-            view.doc = view.areaTexto.getStyledDocument();
-            
-            modeloFuente.aplicarSubrayar(view.doc, view.attributes, inicio, fin);
+
+            JTextPane area = controladorGUI.getAreaActiva();
+            if (area == null) return;
+
+            StyledDocument doc = area.getStyledDocument();
+
+            modeloFuente.aplicarSubrayar(doc, view.attributes, inicio, fin);
+
             cursorSinTextoSelecionado();
-            
-            view.btnSubrayar.setBackground(colorBotonClicked(activo));            
+
+            view.btnSubrayar.setBackground(colorBotonClicked(activo));
         });
         
         // Evento boton Tachado
         view.btnTachado.addActionListener(e -> {
             boolean activo = modeloFuente.ToggleStrikeThrough();
-            
+
             controladorGUI.cerrarBloque();
-            
             obtenerTextoSeleccionado();
-            view.doc = view.areaTexto.getStyledDocument();
-            
-            modeloFuente.aplicarTachado(view.doc, view.attributes, inicio, fin);
+
+            JTextPane area = controladorGUI.getAreaActiva();
+            if (area == null) return;
+
+            StyledDocument doc = area.getStyledDocument();
+
+            modeloFuente.aplicarTachado(doc, view.attributes, inicio, fin);
+
             cursorSinTextoSelecionado();
-            
-            view.btnTachado.setBackground(colorBotonClicked(activo));                        
+
+            view.btnTachado.setBackground(colorBotonClicked(activo));
         });
         
         // Evento boton Subindice
-        view.btnSubindice.addActionListener(e -> {                        
-            if(modeloFuente.isSuperscript()) {
-                modeloFuente.desactivarSuperscript();   
+        view.btnSubindice.addActionListener(e -> {
+            if (modeloFuente.isSuperscript()) {
+                modeloFuente.desactivarSuperscript();
                 view.btnSuperindice.setBackground(btnOff);
-                
                 StyleConstants.setSuperscript(view.attributes, false);
-                cursorSinTextoSelecionado();
-            }                        
-            
-            boolean activo = modeloFuente.ToggleSubscript();            
-            
+            }
+
+            boolean activo = modeloFuente.ToggleSubscript();
+
             controladorGUI.cerrarBloque();
-            
             obtenerTextoSeleccionado();
-            view.doc = view.areaTexto.getStyledDocument();  
-            
-            modeloFuente.aplicarSubindice(view.doc, view.attributes, inicio, fin);            
+
+            JTextPane area = controladorGUI.getAreaActiva();
+            if (area == null) return;
+
+            StyledDocument doc = area.getStyledDocument();
+
+            modeloFuente.aplicarSubindice(doc, view.attributes, inicio, fin);
+
             cursorSinTextoSelecionado();
-            
+
             view.btnSubindice.setBackground(colorBotonClicked(activo));
         });
         
         // Evento boton Superindice
         view.btnSuperindice.addActionListener(e -> {
-            if(modeloFuente.isSubscript()) {
+            if (modeloFuente.isSubscript()) {
                 modeloFuente.desactivarSubscript();
                 view.btnSubindice.setBackground(btnOff);
-                                
                 StyleConstants.setSubscript(view.attributes, false);
-                cursorSinTextoSelecionado();
             }
-            
+
             boolean activo = modeloFuente.ToggleSuperscript();
-            
+
             controladorGUI.cerrarBloque();
-            
             obtenerTextoSeleccionado();
-            view.doc = view.areaTexto.getStyledDocument();
-            
-            modeloFuente.aplicarSuperindice(view.doc, view.attributes, inicio, fin);
+
+            JTextPane area = controladorGUI.getAreaActiva();
+            if (area == null) return;
+
+            StyledDocument doc = area.getStyledDocument();
+
+            modeloFuente.aplicarSuperindice(doc, view.attributes, inicio, fin);
+
             cursorSinTextoSelecionado();
-            
+
             view.btnSuperindice.setBackground(colorBotonClicked(activo));
         });
         
@@ -300,55 +323,66 @@ public class ControladorFuente {
     
     //------------Metodos para el controlador de eventos-------------------
     private void obtenerTextoSeleccionado(){
-        this.inicio = view.areaTexto.getSelectionStart();
-        this.fin = view.areaTexto.getSelectionEnd();
+        JTextPane area = controladorGUI.getAreaActiva();
+        if (area == null) return;
+
+        this.inicio = area.getSelectionStart();
+        this.fin = area.getSelectionEnd();
     }
     
     // Para todos
     private void cursorSinTextoSelecionado(){
+        JTextPane area = controladorGUI.getAreaActiva();
+        if (area == null) return;
         if(inicio == fin)
-            view.areaTexto.setCharacterAttributes(view.attributes, false);
+            area.setCharacterAttributes(view.attributes, false);
             
-        view.areaTexto.requestFocusInWindow();
+        area.requestFocusInWindow();
     }
     
     // Para tipo fuente
     private void cursorSinTextoSeleccionado(String familia){
+        JTextPane area = controladorGUI.getAreaActiva();
+        if (area == null) return;
         if(inicio == fin){
             StyleConstants.setFontFamily(view.attributes, familia);
-            view.areaTexto.setCharacterAttributes(view.attributes, false);            
+            area.setCharacterAttributes(view.attributes, false);
         }            
             
-        view.areaTexto.requestFocusInWindow();
+        area.requestFocusInWindow();
     }
         
     // Para tamaño fuente
     private void cursorSinTextoSeleccionado(int tamaño){
+        JTextPane area = controladorGUI.getAreaActiva();
+        if (area == null) return;
         if(inicio == fin){
             StyleConstants.setFontSize(view.attributes, tamaño);
-            view.areaTexto.setCharacterAttributes(view.attributes, false);            
-        }            
-            
-        view.areaTexto.requestFocusInWindow();
+            area.setCharacterAttributes(view.attributes, false);
+        }
+
+        area.requestFocusInWindow();
     }
-                    
+
     private void aplicarColorTexto(Color color){
         controladorGUI.cerrarBloque();
-        
         obtenerTextoSeleccionado();
-        
-        view.doc = view.areaTexto.getStyledDocument();         
-        
+
+        JTextPane area = controladorGUI.getAreaActiva();
+        if (area == null) return;
+
+        StyledDocument doc = area.getStyledDocument();
+
         if(modoResaltado){
-            modeloFuente.aplicarFondoTexto(view.doc, view.attributes, inicio, fin, color);
+            modeloFuente.aplicarFondoTexto(doc, view.attributes, inicio, fin, color);
             boolean actived = !color.equals(Color.white);
             view.btnResaltarTexto.setBackground(colorBotonClicked(actived));
         } else {
-            modeloFuente.aplicarColorTexto(view.doc, view.attributes, inicio, fin, color);
+            modeloFuente.aplicarColorTexto(doc, view.attributes, inicio, fin, color);
         }
+
         cursorSinTextoSelecionado();
-        view.areaTexto.requestFocusInWindow();
-    }                
+    }
     
     private Color escogerColor(){
         Color c = JColorChooser.showDialog(null, "Selecciona un color", modeloFuente.currentColor);
