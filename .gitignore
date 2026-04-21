@@ -1,16 +1,4 @@
-# Compilados Java
-*.class
-
-# Carpetas de build
 build/
-out/
+*.class
 dist/
-
-# NetBeans
 nbproject/private/
-
-# IntelliJ
-.idea/
-
-# Logs
-*.log
